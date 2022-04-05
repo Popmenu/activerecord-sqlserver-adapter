@@ -9,6 +9,7 @@ module ActiveRecord
         end
 
         def create_table(table_name, **options)
+          table_name = "[#{table_name}]"
           res = super
           clear_cache!
           res
@@ -219,6 +220,11 @@ module ActiveRecord
           end
         end
 
+        def add_foreign_key(from_table, to_table, **options)
+          options[:name] = "[#{options[:name]}]" if options[:name]
+          super(from_table, to_table, **options)
+        end
+
         def extract_foreign_key_action(action, fk_name)
           case select_value("SELECT #{action}_referential_action_desc FROM sys.foreign_keys WHERE name = '#{fk_name}'")
           when "CASCADE" then :cascade
@@ -366,7 +372,7 @@ module ActiveRecord
         end
 
         def column_definitions(table_name)
-          identifier  = database_prefix_identifier(table_name)
+          identifier  = database_prefix_identifier(table_name.end_with?(']') ? table_name : "[#{table_name}]")
           database    = identifier.fully_qualified_database_quoted
           view_exists = view_exists?(table_name)
           view_tblnm  = view_table_name(table_name) if view_exists
